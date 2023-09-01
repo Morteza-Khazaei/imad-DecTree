@@ -115,6 +115,7 @@ class DecTree:
         trg_ds = gdal.Warp('', chmap, dstSRS='EPSG:3857', format='MEM', xRes=10, yRes=10)
 
         trg_geoTrans = trg_ds.GetGeoTransform()
+        self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
 
         trg_bands = trg_ds.RasterCount        # Number of bands
         trg_projection = trg_ds.GetProjection()      # Projection
@@ -138,6 +139,7 @@ class DecTree:
             new_trg_geoTrans = list(trg_geoTrans)
             new_trg_geoTrans[0] = xmin_sub
             new_trg_geoTrans[3] = ymax_sub
+            self.logger.debug(f'New GeoTransform: {trg_geoTrans}')
 
             # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
             trg_inv_geotrans = gdal.InvGeoTransform(trg_geoTrans)
@@ -215,6 +217,7 @@ class DecTree:
             prx_fname = bin_file_path.replace('BIN', 'PROX')
             prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
             prx_band = prx_ds.GetRasterBand(1)
+            self.logger.debug(f'Sum Change and Proxy is created.')
 
             gdal.ComputeProximity(sum_band, prx_band,
                     options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=None) #gdal.TermProgress
@@ -272,6 +275,7 @@ class DecTree:
 
         zf.write(out_dir, pname)
         zf.close()
+        self.logger.debug(f'Zipfile created with Id: {zfname}.')
 
         data = {
             'year': jalali_date.year,
