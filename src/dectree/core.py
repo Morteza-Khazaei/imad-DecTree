@@ -336,7 +336,8 @@ def main():
     parser.add_argument("-o", "--output", type=str, help="Where is your preferred direction to store change maps?")
     parser.add_argument("-l", "--landcover", type=str, help="Landcover map")
     parser.add_argument("-m", "--false_mask", type=str, help="False mask map")
-    parser.add_argument("-s", "--seed_db", type=bool, help="Upload output to the WebApp database", default=True)
+    parser.add_argument("-s", "--seed_db", help="Upload output to the WebApp database. Default is fals", 
+                        default=False, action="store_true")
     parser.add_argument("-v", "--verbose", help="Provides detailed (DEBUG) logging for DecTree. Default is false",
                         default=False, action="store_true")
 
