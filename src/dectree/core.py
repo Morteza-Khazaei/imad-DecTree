@@ -18,9 +18,12 @@ from osgeo import gdal, ogr
 
 class DecTree:
 
-
+    version = 2023.09
     def __init__(self, address:str, username:str, password:str, input:str, output:str, 
                  landcover:str, false_mask:str, seed_db:bool, **kwargs) -> None:
+        
+        self.logger = kwargs.get("logger", logging.getLogger("root"))
+        self.logger.info(f'======================= This is DecTree v{self.version} ======================')
 
         self.input_base_dir = input
         self.output_base_dir = output
@@ -279,13 +282,15 @@ class DecTree:
         files = {'zip_file': open(os.path.join(out_dir, zfname), 'rb')}
 
         resp =  requests.post(url, data=data, headers=headers, files=files)
-        print(resp.status_code)
-        print(resp.json())
+        self.logger.info(resp.status_code)
+    
+        return resp
+
 
 
     def run(self):
         tiles = os.listdir(self.input_base_dir)
-
+        self.logger.info(f'DecTree found these tiles: {tiles}')
         for tile in tiles:
             out_dir = os.path.join(self.output_base_dir, tile)
 
@@ -293,8 +298,8 @@ class DecTree:
                 os.makedirs(out_dir)
 
             chmap_paths = os.path.join(self.input_base_dir, tile)
-
             chmaps = os.listdir(chmap_paths)
+            self.logger.info(f'DecTree found these CHMAP images: {chmaps} for this tile: {tiles}')
             for file in chmaps:
                 chmap_file_path = os.path.join(chmap_paths, file)
 
@@ -302,7 +307,7 @@ class DecTree:
                 bin_file_path = os.path.join(out_dir, bname)
 
                 if not os.path.exists(bin_file_path):
-                    print('Create file %s' % bin_file_path)
+                    self.logger.info('Create file %s' % bin_file_path)
 
                     self.__process_chmap(chmap_file_path, bin_file_path)
 
@@ -314,13 +319,15 @@ class DecTree:
                         nrgb_name = file.replace('CHMAP', 'NRGB')
                         nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
                         
+                        self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
+                        self.logger.info(f'DecTree will update database with this BIN map: {bname}')
                         self.__db_seeder(url, headers, nrgb_file_path)
                         self.__db_seeder(url, headers, bin_file_path)
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description="Perfrom IR-MAD change detection on bitemporal, multispectral imagery.")
+    parser = argparse.ArgumentParser(description="Perfrom DecTree to extract forest binary change map from iMad outputs.")
 
     parser.add_argument("-a", "--address", type=str, help="WebApp address")
     parser.add_argument("-u", "--username", type=str, help="WebApp username")
