@@ -363,7 +363,7 @@ class DecTree:
                             response = requests.get(url, headers=headers)
                             
                             if response.status_code == 200:
-                                print('Success!')
+                                self.logger.info('Success!')
                                 self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
                                 self.__db_seeder(temp_dir, url, headers, bin_file_path)
                             elif response.status_code == 404:
