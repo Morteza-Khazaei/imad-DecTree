@@ -180,8 +180,8 @@ class DecTree:
 
             image_bands = []
             for b in range(trg_nbands):
-                trg_band = trg_ds.GetRasterBand(b + 1).ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub)
-                image_bands.append(trg_band)
+                trg_band = trg_ds.GetRasterBand(b + 1)
+                image_bands.append(trg_band.ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub))
 
             blue_band, green_band, red_band, nir_band, kisqr_band = image_bands
 
@@ -290,7 +290,7 @@ class DecTree:
 
     def __db_seeder(self, temp_dir, url, headers, image_path):
 
-        out_dir, fname = os.path.splitext(image_path)
+        base_dir, fname = os.path.splitext(image_path)
 
         platform, date_obj, product, tile, c, version, ftype = fname.split('_')
         date_time_str = date_obj.split('-')[0]
@@ -303,9 +303,9 @@ class DecTree:
 
         zfname = ''.join(['_'.join([ftype, yyyymm, tile]), '.zip']) #CHMAP_139802_39SUB.zip
 
-        zf = zipfile.ZipFile(os.path.join(out_dir, zfname), "w", zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile(os.path.join(temp_dir, zfname), "w", zipfile.ZIP_DEFLATED)
 
-        zf.write(out_dir, pname)
+        zf.write(temp_dir, pname)
         zf.close()
         self.logger.debug(f'Zipfile created with Id: {zfname}.')
 
@@ -315,7 +315,7 @@ class DecTree:
             'scene_name': tile
         }
 
-        files = {'zip_file': open(os.path.join(out_dir, zfname), 'rb')}
+        files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
 
         resp =  requests.post(url, data=data, headers=headers, files=files)
         self.logger.info(resp.status_code)
