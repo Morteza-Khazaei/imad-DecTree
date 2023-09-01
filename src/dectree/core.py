@@ -120,7 +120,7 @@ class DecTree:
     def __process_chmap(self, chmap:str, bin_file_path:str):
         # Create a temporary directory to store intermediate files
         with tempfile.TemporaryDirectory() as temp_dir:
-            self.logger.debug(f'created temporary directory: {temp_dir}')
+            self.logger.debug(f'Temporary directory was created: {temp_dir}')
 
             driver = gdal.IdentifyDriver(chmap)
             if driver is not None:
@@ -208,8 +208,8 @@ class DecTree:
                 other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
                 
                 # Get subset of the raster as a numpy array
-                src_sub_array_fchm = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-                mask_fchm = src_sub_array_fchm == 1
+                fm_sub_array = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+                mask_fchm = fm_sub_array == 1
                 self.logger.debug(f'Cropped the False Mask image based on tile number.')
 
                 # Mask out unchanged pixels strong
@@ -275,15 +275,11 @@ class DecTree:
 
                 bin_band.FlushCache()
 
-                # Remove temporary files and directory
-                trg_ds = None  # Close the wrap GDAL dataset
-                sum_ds = None  # Close the temporary GDAL dataset
-                prx_ds = None  # Close the proximity dataset
-                bin_ds = None  # Close the final binary dataset
-
-            # # Clean up temporary files
-            # os.remove(sum_fname)
-            # os.remove(prx_fname)
+                # # Remove temporary files and directory
+                # trg_ds = None  # Close the wrap GDAL dataset
+                # sum_ds = None  # Close the temporary GDAL dataset
+                # prx_ds = None  # Close the proximity dataset
+                # bin_ds = None  # Close the final binary dataset
         
         return None
 
