@@ -360,8 +360,24 @@ class DecTree:
                             
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
-                            self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
-                            self.__db_seeder(temp_dir, url, headers, bin_file_path)
+                            response = requests.get(url, headers=headers)
+                            
+                            if response.status_code == 200:
+                                print('Success!')
+                                self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
+                                self.__db_seeder(temp_dir, url, headers, bin_file_path)
+                            elif response.status_code == 404:
+                                self.logger.info('Not Found.')
+                            elif response.status_code == 400:
+                                self.logger.info('Bad Request.')
+                            elif response.status_code == 401:
+                                self.logger.info('Unauthorized.')
+                            elif response.status_code == 403:
+                                self.logger.info('Forbidden.')
+                            elif response.status_code == 500:
+                                self.logger.info('Internal Server Error.')
+                            else:
+                                self.logger.info('Unexpected Status Code:', response.status_code)
 
 
 def main():
