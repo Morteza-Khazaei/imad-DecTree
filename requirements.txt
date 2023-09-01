@@ -1,0 +1,4 @@
+jdatetime
+requests
+numpy
+gdal
