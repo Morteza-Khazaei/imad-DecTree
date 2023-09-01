@@ -270,9 +270,8 @@ class DecTree:
                 bin_ds.SetProjection(trg_projection)
 
                 bin_band = bin_ds.GetRasterBand(1)
+                bin_band.SetNoDataValue(255)
                 bin_band.WriteArray(final_array)
-
-                bin_band.GetRasterBand(1).SetNoDataValue(255)
 
                 # Remove cache files
                 lc_band.FlushCache()
