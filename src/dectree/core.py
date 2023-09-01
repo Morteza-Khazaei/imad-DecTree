@@ -122,168 +122,168 @@ class DecTree:
         with tempfile.TemporaryDirectory() as temp_dir:
             self.logger.debug(f'created temporary directory: {temp_dir}')
 
-        driver = gdal.IdentifyDriver(chmap)
-        if driver is not None:
-            trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
-            trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
+            driver = gdal.IdentifyDriver(chmap)
+            if driver is not None:
+                trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
+                trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
 
-        trg_geoTrans = trg_ds.GetGeoTransform()
-        self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
+            trg_geoTrans = trg_ds.GetGeoTransform()
+            self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
 
-        trg_bands = trg_ds.RasterCount        # Number of bands
-        trg_projection = trg_ds.GetProjection()      # Projection
+            trg_bands = trg_ds.RasterCount        # Number of bands
+            trg_projection = trg_ds.GetProjection()      # Projection
 
-        # Get raster bbox
-        trg_bbox = self.__getBBox(trg_ds)
+            # Get raster bbox
+            trg_bbox = self.__getBBox(trg_ds)
 
-        # Get intersection between two geometry
-        intersection = self.lc_bbox.Intersection(trg_bbox)
+            # Get intersection between two geometry
+            intersection = self.lc_bbox.Intersection(trg_bbox)
 
-        # Check if two geom have intersection
-        if intersection is not None and intersection.Area() > 0:
+            # Check if two geom have intersection
+            if intersection is not None and intersection.Area() > 0:
 
-            # Get bound of overlap
-            bounds_geo = intersection.Boundary()
+                # Get bound of overlap
+                bounds_geo = intersection.Boundary()
 
-            # Get extent of input raster
-            xmin_sub, xmax_sub, ymin_sub, ymax_sub = bounds_geo.GetEnvelope()
+                # Get extent of input raster
+                xmin_sub, xmax_sub, ymin_sub, ymax_sub = bounds_geo.GetEnvelope()
 
-            # Create a new geomatrix for the image
-            new_trg_geoTrans = list(trg_geoTrans)
-            new_trg_geoTrans[0] = xmin_sub
-            new_trg_geoTrans[3] = ymax_sub
-            self.logger.debug(f'New GeoTransform: {trg_geoTrans}')
+                # Create a new geomatrix for the image
+                new_trg_geoTrans = list(trg_geoTrans)
+                new_trg_geoTrans[0] = xmin_sub
+                new_trg_geoTrans[3] = ymax_sub
+                self.logger.debug(f'New GeoTransform: {trg_geoTrans}')
 
-            # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
-            trg_inv_geotrans = gdal.InvGeoTransform(trg_geoTrans)
+                # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
+                trg_inv_geotrans = gdal.InvGeoTransform(trg_geoTrans)
 
-            # Convert lon/lat degrees to x/y pixel for the dataset
-            ulX_sub, ulY_sub = gdal.ApplyGeoTransform(trg_inv_geotrans, xmin_sub, ymax_sub)
-            lrX_sub, lrY_sub = gdal.ApplyGeoTransform(trg_inv_geotrans, xmax_sub, ymin_sub)
+                # Convert lon/lat degrees to x/y pixel for the dataset
+                ulX_sub, ulY_sub = gdal.ApplyGeoTransform(trg_inv_geotrans, xmin_sub, ymax_sub)
+                lrX_sub, lrY_sub = gdal.ApplyGeoTransform(trg_inv_geotrans, xmax_sub, ymin_sub)
 
-            xsize_sub = int(lrX_sub - ulX_sub)
-            ysize_sub = int(lrY_sub - ulY_sub)
+                xsize_sub = int(lrX_sub - ulX_sub)
+                ysize_sub = int(lrY_sub - ulY_sub)
 
-            image_bands = []
-            for b in range(trg_bands):
-                image_bands.append(trg_ds.GetRasterBand(b + 1).ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub))
+                image_bands = []
+                for b in range(trg_bands):
+                    image_bands.append(trg_ds.GetRasterBand(b + 1).ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub))
 
-            blue_band, green_band, red_band, nir_band, kisqr_band = image_bands
+                blue_band, green_band, red_band, nir_band, kisqr_band = image_bands
 
-            # All changes strong
-            total_change_strong = np.logical_and(
-                np.logical_and(
-                    np.logical_and(blue_band < 10.0, blue_band > 2.0),
-                    np.logical_and(red_band < -1.0, red_band > -5.0)),
-                np.logical_and(
-                    np.logical_and(nir_band < -1.0, nir_band > -5.0),
-                    np.logical_and(kisqr_band < 1500, kisqr_band > 150))
-            )
+                # All changes strong
+                total_change_strong = np.logical_and(
+                    np.logical_and(
+                        np.logical_and(blue_band < 10.0, blue_band > 2.0),
+                        np.logical_and(red_band < -1.0, red_band > -5.0)),
+                    np.logical_and(
+                        np.logical_and(nir_band < -1.0, nir_band > -5.0),
+                        np.logical_and(kisqr_band < 1500, kisqr_band > 150))
+                )
 
-            # All changes weak
-            total_change_weak = np.logical_and(
-                np.logical_and(
-                    np.logical_and(blue_band < 11.0, blue_band > 1.0),
-                    np.logical_and(red_band < -0.0, red_band > -6.0)),
-                np.logical_and(
-                    np.logical_and(nir_band < -0.0, nir_band > -6.0),
-                    np.logical_and(kisqr_band < 2000, kisqr_band > 100))
-            )
+                # All changes weak
+                total_change_weak = np.logical_and(
+                    np.logical_and(
+                        np.logical_and(blue_band < 11.0, blue_band > 1.0),
+                        np.logical_and(red_band < -0.0, red_band > -6.0)),
+                    np.logical_and(
+                        np.logical_and(nir_band < -0.0, nir_band > -6.0),
+                        np.logical_and(kisqr_band < 2000, kisqr_band > 100))
+                )
 
-            # No data mask
-            nodata_mask = kisqr_band >= 2000
+                # No data mask
+                nodata_mask = kisqr_band >= 2000
 
-            # Convert lon/lat degrees to x/y pixel for the dataset
-            ulX, ulY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmin_sub, ymax_sub)
-            lrX, lrY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmax_sub, ymin_sub)
+                # Convert lon/lat degrees to x/y pixel for the dataset
+                ulX, ulY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmin_sub, ymax_sub)
+                lrX, lrY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmax_sub, ymin_sub)
 
-            xsize = int(lrX - ulX)
-            ysize = int(lrY - ulY)
+                xsize = int(lrX - ulX)
+                ysize = int(lrY - ulY)
 
-            # Get subset of the raster as a numpy array
-            lc_sub_array = self.lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-            self.logger.debug(f'Cropped the Landcover image based on tile number.')
-            
-            # Mask out other classes
-            other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
-            
-            # Get subset of the raster as a numpy array
-            src_sub_array_fchm = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-            mask_fchm = src_sub_array_fchm == 1
-            self.logger.debug(f'Cropped the False Mask image based on tile number.')
+                # Get subset of the raster as a numpy array
+                lc_sub_array = self.lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+                self.logger.debug(f'Cropped the Landcover image based on tile number.')
+                
+                # Mask out other classes
+                other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
+                
+                # Get subset of the raster as a numpy array
+                src_sub_array_fchm = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+                mask_fchm = src_sub_array_fchm == 1
+                self.logger.debug(f'Cropped the False Mask image based on tile number.')
 
-            # Mask out unchanged pixels strong
-            total_change_strong[other_classes] = 0
-            total_change_strong[nodata_mask] = 0
+                # Mask out unchanged pixels strong
+                total_change_strong[other_classes] = 0
+                total_change_strong[nodata_mask] = 0
 
-            # Mask out unchanged pixels weak
-            total_change_weak[other_classes] = 0
-            total_change_weak[nodata_mask] = 0
+                # Mask out unchanged pixels weak
+                total_change_weak[other_classes] = 0
+                total_change_weak[nodata_mask] = 0
 
-            sum_change = np.add(total_change_strong, total_change_weak, dtype=int)
-            self.logger.debug(f'Sum change image is successfully created.')
+                sum_change = np.add(total_change_strong, total_change_weak, dtype=int)
+                self.logger.debug(f'Sum change image is successfully created.')
 
-            # Write the output into geotiff image.
-            sum_fname = os.path.join(temp_dir, 'sum_change_temp.tif')
-            drv = gdal.GetDriverByName('GTiff')
-            sum_ds = drv.Create(sum_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
-            sum_ds.SetGeoTransform(new_trg_geoTrans)
-            sum_ds.SetProjection(trg_projection)
-            sum_band = sum_ds.GetRasterBand(1)
-            sum_band.WriteArray(sum_change)
+                # Write the output into geotiff image.
+                sum_fname = os.path.join(temp_dir, 'sum_change_temp.tif')
+                drv = gdal.GetDriverByName('GTiff')
+                sum_ds = drv.Create(sum_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
+                sum_ds.SetGeoTransform(new_trg_geoTrans)
+                sum_ds.SetProjection(trg_projection)
+                sum_band = sum_ds.GetRasterBand(1)
+                sum_band.WriteArray(sum_change)
 
-            self.logger.debug(f'Sum Change with name {sum_fname} is created.')
+                self.logger.debug(f'Sum Change with name {sum_fname} is created.')
 
-            prx_fname = os.path.join(temp_dir, 'proxy_temp.tif')
-            prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
-            prx_ds.SetGeoTransform(new_trg_geoTrans)
-            prx_ds.SetProjection(trg_projection)
-            prx_band = prx_ds.GetRasterBand(1)
-            self.logger.debug(f'Proxy with name {prx_fname} is created.')
+                prx_fname = os.path.join(temp_dir, 'proxy_temp.tif')
+                prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
+                prx_ds.SetGeoTransform(new_trg_geoTrans)
+                prx_ds.SetProjection(trg_projection)
+                prx_band = prx_ds.GetRasterBand(1)
+                self.logger.debug(f'Proxy with name {prx_fname} is created.')
 
-            gdal.ComputeProximity(sum_band, prx_band,
-                    options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=gdal.TermProgress) #gdal.TermProgress
+                gdal.ComputeProximity(sum_band, prx_band,
+                        options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=gdal.TermProgress) #gdal.TermProgress
 
-            prx_array = prx_band.ReadAsArray()
+                prx_array = prx_band.ReadAsArray()
 
-            total_change = np.logical_and(total_change_weak, prx_array==0)
+                total_change = np.logical_and(total_change_weak, prx_array==0)
 
-            # Forest changes
-            forest_changes = np.logical_and(total_change, lc_sub_array==0)
+                # Forest changes
+                forest_changes = np.logical_and(total_change, lc_sub_array==0)
 
-            # Rangeland changes
-            rangeland_changes = np.logical_and(total_change, lc_sub_array==1)
+                # Rangeland changes
+                rangeland_changes = np.logical_and(total_change, lc_sub_array==1)
 
-            # Assign class labels
-            final_array = np.full(lc_sub_array.shape, 255, dtype=int)
-            final_array[forest_changes] = 0
-            final_array[rangeland_changes] = 1
-            
-            final_array[mask_fchm] = 255
+                # Assign class labels
+                final_array = np.full(lc_sub_array.shape, 255, dtype=int)
+                final_array[forest_changes] = 0
+                final_array[rangeland_changes] = 1
+                
+                final_array[mask_fchm] = 255
 
-            driver = gdal.GetDriverByName('GTiff')
-            bin_ds = driver.Create(bin_file_path, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
-            bin_ds.SetGeoTransform(new_trg_geoTrans)
+                driver = gdal.GetDriverByName('GTiff')
+                bin_ds = driver.Create(bin_file_path, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
+                bin_ds.SetGeoTransform(new_trg_geoTrans)
 
-            # Create for target raster the same projection as for the value raster
-            bin_ds.SetProjection(trg_projection)
+                # Create for target raster the same projection as for the value raster
+                bin_ds.SetProjection(trg_projection)
 
-            bin_band = bin_ds.GetRasterBand(1)
-            bin_band.WriteArray(final_array)
+                bin_band = bin_ds.GetRasterBand(1)
+                bin_band.WriteArray(final_array)
 
-            bin_band.GetRasterBand(1).SetNoDataValue(255)
+                bin_band.GetRasterBand(1).SetNoDataValue(255)
 
-            bin_band.FlushCache()
+                bin_band.FlushCache()
 
-            # Remove temporary files and directory
-            trg_ds = None  # Close the wrap GDAL dataset
-            sum_ds = None  # Close the temporary GDAL dataset
-            prx_ds = None  # Close the proximity dataset
-            bin_ds = None  # Close the final binary dataset
+                # Remove temporary files and directory
+                trg_ds = None  # Close the wrap GDAL dataset
+                sum_ds = None  # Close the temporary GDAL dataset
+                prx_ds = None  # Close the proximity dataset
+                bin_ds = None  # Close the final binary dataset
 
-            # Clean up temporary files
-            os.remove(sum_fname)
-            os.remove(prx_fname)
+            # # Clean up temporary files
+            # os.remove(sum_fname)
+            # os.remove(prx_fname)
         
         return None
 
