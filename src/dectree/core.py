@@ -345,7 +345,7 @@ class DecTree:
                 if not os.path.exists(bin_file_path):
                     # Create a temporary directory to store intermediate files
                     with tempfile.TemporaryDirectory() as temp_dir:
-                        self.logger.debug(f'Temporary directory was created: {temp_dir}')
+                        self.logger.info(f'Temporary directory was created: {temp_dir}')
                         self.logger.info('Create file %s' % bin_file_path)
 
                         self.__process_chmap(temp_dir, chmap_file_path, bin_file_path)
