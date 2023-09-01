@@ -349,5 +349,5 @@ def main():
 
 
     tree = DecTree(args.address, args.username, args.password, args.input, args.output, 
-                   args.landcover, args.false_mask, logger=logger)
+                   args.landcover, args.false_mask, args.seed_db, logger=logger)
     tree.run()
