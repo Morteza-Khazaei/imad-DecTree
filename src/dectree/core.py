@@ -191,8 +191,8 @@ class DecTree:
             ysize = int(lrY - ulY)
 
             # Get subset of the raster as a numpy array
-            self.logger.debug(f'Reading and cropping the landcover image based on tile number.')
             lc_sub_array = self.lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+            self.logger.debug(f'Cropped the Landcover image based on tile number.')
             
             # Mask out other classes
             other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
@@ -200,6 +200,7 @@ class DecTree:
             # Get subset of the raster as a numpy array
             src_sub_array_fchm = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
             mask_fchm = src_sub_array_fchm == 1
+            self.logger.debug(f'Cropped the False Mask image based on tile number.')
 
             # Mask out unchanged pixels strong
             total_change_strong[other_classes] = 0
