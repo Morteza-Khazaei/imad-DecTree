@@ -243,7 +243,7 @@ class DecTree:
                 self.logger.debug(f'Proxy with name {prx_fname} is created.')
 
                 gdal.ComputeProximity(sum_band, prx_band,
-                        options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=gdal.TermProgress) #gdal.TermProgress
+                        options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=None) #gdal.TermProgress
 
                 prx_array = prx_band.ReadAsArray()
 
