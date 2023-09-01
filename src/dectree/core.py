@@ -9,6 +9,7 @@ import tempfile
 import jdatetime
 import numpy as np
 from osgeo import gdal, ogr
+from requests.exceptions import HTTPError
 
 
 
@@ -360,24 +361,36 @@ class DecTree:
                             
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
-                            response = requests.get(url, headers=headers)
-                            
-                            if response.status_code == 200:
-                                self.logger.info('Success!')
-                                self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
-                                self.__db_seeder(temp_dir, url, headers, bin_file_path)
-                            elif response.status_code == 404:
-                                self.logger.info('Not Found.')
-                            elif response.status_code == 400:
-                                self.logger.info('Bad Request.')
-                            elif response.status_code == 401:
-                                self.logger.info('Unauthorized.')
-                            elif response.status_code == 403:
-                                self.logger.info('Forbidden.')
-                            elif response.status_code == 500:
-                                self.logger.info('Internal Server Error.')
+
+                            try:
+                                response = requests.get(url, headers=headers)
+                                # If the response was successful, no Exception will be raised
+                                response.raise_for_status()
+
+                                if response.status_code == 200:
+                                    self.logger.info('Success!')
+                                    self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
+                                    self.__db_seeder(temp_dir, url, headers, bin_file_path)
+                                elif response.status_code == 404:
+                                    self.logger.info('Not Found.')
+                                elif response.status_code == 400:
+                                    self.logger.info('Bad Request.')
+                                elif response.status_code == 401:
+                                    self.logger.info('Unauthorized.')
+                                elif response.status_code == 403:
+                                    self.logger.info('Forbidden.')
+                                elif response.status_code == 500:
+                                    self.logger.info('Internal Server Error.')
+                                else:
+                                    self.logger.info('Unexpected Status Code:', response.status_code)
+
+                            except HTTPError as http_err:
+                                self.logger.info(f'HTTP error occurred: {http_err}')
+                            except Exception as err:
+                                self.logger.info(f'Other error occurred: {err}')
                             else:
-                                self.logger.info('Unexpected Status Code:', response.status_code)
+                                self.logger.info('Success!')
+                            
 
 
 def main():
