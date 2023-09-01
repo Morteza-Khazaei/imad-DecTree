@@ -28,34 +28,14 @@ class DecTree:
 
         self.input_base_dir = input
         self.output_base_dir = output
+        self.landcover = landcover
+        self.false_mask = false_mask
         
         # datebase connection params
         self.seed_db = seed_db
         self.username = username
         self.password = password
         self.address = address
-        
-        lc_ds = gdal.Open(landcover, gdal.GA_ReadOnly)
-        if lc_ds is None:
-            self.logger.info(f'Unable to open {landcover}')
-            sys.exit(1)
-        
-        # Get the first input raster band
-        self.lc_band = lc_ds.GetRasterBand(1)
-        # Get raster bbox
-        self.lc_bbox = self.__getBBox(lc_ds)
-        # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
-        lc_geotrans = lc_ds.GetGeoTransform()
-        self.lc_inv_geotrans = gdal.InvGeoTransform(lc_geotrans)
-
-        # Open input raster by gdal
-        fm_ds = gdal.Open(false_mask, gdal.GA_ReadOnly)
-        if fm_ds is None:
-            self.logger.info(f'Unable to open {false_mask}')
-            sys.exit(1)
-
-        # Get the first input raster band
-        self.fm_band = fm_ds.GetRasterBand(1)
 
         return None
 
@@ -118,26 +98,46 @@ class DecTree:
     
 
     def __process_chmap(self, chmap:str, bin_file_path:str):
+        lc_ds = gdal.Open(self.landcover, gdal.GA_ReadOnly)
+        if lc_ds is None:
+            self.logger.info(f'Unable to open {self.landcover}')
+            sys.exit(1)
+        
+        # Get the first input raster band
+        lc_band = lc_ds.GetRasterBand(1)
+        # Get raster bbox
+        lc_bbox = self.__getBBox(lc_ds)
+        # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
+        lc_geotrans = lc_ds.GetGeoTransform()
+        lc_inv_geotrans = gdal.InvGeoTransform(lc_geotrans)
+
+        # Open input raster by gdal
+        fm_ds = gdal.Open(self.false_mask, gdal.GA_ReadOnly)
+        if fm_ds is None:
+            self.logger.info(f'Unable to open {self.false_mask}')
+            sys.exit(1)
+
+        # Get the first input raster band
+        fm_band = fm_ds.GetRasterBand(1)
+
         # Create a temporary directory to store intermediate files
         with tempfile.TemporaryDirectory() as temp_dir:
             self.logger.debug(f'Temporary directory was created: {temp_dir}')
 
-            driver = gdal.IdentifyDriver(chmap)
-            if driver is not None:
-                trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
-                trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
+            trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
+            trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
 
             trg_geoTrans = trg_ds.GetGeoTransform()
             self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
 
-            trg_bands = trg_ds.RasterCount        # Number of bands
+            trg_nbands = trg_ds.RasterCount        # Number of bands
             trg_projection = trg_ds.GetProjection()      # Projection
 
             # Get raster bbox
             trg_bbox = self.__getBBox(trg_ds)
 
             # Get intersection between two geometry
-            intersection = self.lc_bbox.Intersection(trg_bbox)
+            intersection = lc_bbox.Intersection(trg_bbox)
 
             # Check if two geom have intersection
             if intersection is not None and intersection.Area() > 0:
@@ -164,9 +164,26 @@ class DecTree:
                 xsize_sub = int(lrX_sub - ulX_sub)
                 ysize_sub = int(lrY_sub - ulY_sub)
 
+                # Convert lon/lat degrees to x/y pixel for the dataset
+                ulX, ulY = gdal.ApplyGeoTransform(lc_inv_geotrans, xmin_sub, ymax_sub)
+                lrX, lrY = gdal.ApplyGeoTransform(lc_inv_geotrans, xmax_sub, ymin_sub)
+
+                xsize = int(lrX - ulX)
+                ysize = int(lrY - ulY)
+
+                # Get subset of the raster as a numpy array
+                lc_sub_array = lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+                self.logger.debug(f'Cropped the Landcover image based on tile number.')
+                
+                # Get subset of the raster as a numpy array
+                fm_sub_array = fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
+                mask_fchm = fm_sub_array == 1
+                self.logger.debug(f'Cropped the False Mask image based on tile number.')
+
                 image_bands = []
-                for b in range(trg_bands):
-                    image_bands.append(trg_ds.GetRasterBand(b + 1).ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub))
+                for b in range(trg_nbands):
+                    trg_band = trg_ds.GetRasterBand(b + 1).ReadAsArray(int(ulX_sub), int(ulY_sub), xsize_sub, ysize_sub)
+                    image_bands.append(trg_band)
 
                 blue_band, green_band, red_band, nir_band, kisqr_band = image_bands
 
@@ -193,24 +210,8 @@ class DecTree:
                 # No data mask
                 nodata_mask = kisqr_band >= 2000
 
-                # Convert lon/lat degrees to x/y pixel for the dataset
-                ulX, ulY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmin_sub, ymax_sub)
-                lrX, lrY = gdal.ApplyGeoTransform(self.lc_inv_geotrans, xmax_sub, ymin_sub)
-
-                xsize = int(lrX - ulX)
-                ysize = int(lrY - ulY)
-
-                # Get subset of the raster as a numpy array
-                lc_sub_array = self.lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-                self.logger.debug(f'Cropped the Landcover image based on tile number.')
-                
                 # Mask out other classes
                 other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
-                
-                # Get subset of the raster as a numpy array
-                fm_sub_array = self.fm_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-                mask_fchm = fm_sub_array == 1
-                self.logger.debug(f'Cropped the False Mask image based on tile number.')
 
                 # Mask out unchanged pixels strong
                 total_change_strong[other_classes] = 0
@@ -273,13 +274,19 @@ class DecTree:
 
                 bin_band.GetRasterBand(1).SetNoDataValue(255)
 
+                # Remove cache files
+                lc_band.FlushCache()
+                fm_band.FlushCache()
+                trg_band.FlushCache()
+                sum_band.FlushCache()
+                prx_band.FlushCache()
                 bin_band.FlushCache()
 
-                # # Remove temporary files and directory
-                # trg_ds = None  # Close the wrap GDAL dataset
-                # sum_ds = None  # Close the temporary GDAL dataset
-                # prx_ds = None  # Close the proximity dataset
-                # bin_ds = None  # Close the final binary dataset
+                # Remove temporary files and directory
+                trg_ds = None  # Close the wrap GDAL dataset
+                sum_ds = None  # Close the temporary GDAL dataset
+                prx_ds = None  # Close the proximity dataset
+                bin_ds = None  # Close the final binary dataset
         
         return None
 
