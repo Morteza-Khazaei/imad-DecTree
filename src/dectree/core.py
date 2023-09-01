@@ -35,17 +35,24 @@ class DecTree:
         self.password = password
         self.address = address
         
-        self.lc_ds = gdal.Open(landcover, gdal.GA_ReadOnly)
+        lc_ds = gdal.Open(landcover, gdal.GA_ReadOnly)
+        if lc_ds is None:
+            self.logger.info(f'Unable to open {landcover}')
+            sys.exit(1)
+        
         # Get the first input raster band
-        self.lc_band = self.lc_ds.GetRasterBand(1)
+        self.lc_band = lc_ds.GetRasterBand(1)
         # Get raster bbox
-        self.lc_bbox = self.__getBBox(self.lc_ds)
+        self.lc_bbox = self.__getBBox(lc_ds)
         # The inverse geotransform is used to convert lon/lat degrees to x/y pixel index
-        lc_geotrans = self.lc_ds.GetGeoTransform()
+        lc_geotrans = lc_ds.GetGeoTransform()
         self.lc_inv_geotrans = gdal.InvGeoTransform(lc_geotrans)
 
         # Open input raster by gdal
         fm_ds = gdal.Open(false_mask, gdal.GA_ReadOnly)
+        if fm_ds is None:
+            self.logger.info(f'Unable to open {false_mask}')
+            sys.exit(1)
 
         # Get the first input raster band
         self.fm_band = fm_ds.GetRasterBand(1)
@@ -113,9 +120,11 @@ class DecTree:
     def __process_chmap(self, chmap:str, bin_file_path:str):
         # Create a temporary directory to store intermediate files
         temp_dir = tempfile.mkdtemp()
-        
-        trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
-        trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
+
+        driver = gdal.IdentifyDriver(chmap)
+        if driver is not None:
+            trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
+            trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
 
         trg_geoTrans = trg_ds.GetGeoTransform()
         self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
