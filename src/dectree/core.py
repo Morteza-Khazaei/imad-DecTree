@@ -119,7 +119,8 @@ class DecTree:
 
     def __process_chmap(self, chmap:str, bin_file_path:str):
         # Create a temporary directory to store intermediate files
-        temp_dir = tempfile.mkdtemp()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.logger.debug(f'created temporary directory: {temp_dir}')
 
         driver = gdal.IdentifyDriver(chmap)
         if driver is not None:
