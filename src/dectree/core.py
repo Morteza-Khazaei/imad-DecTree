@@ -367,23 +367,6 @@ class DecTree:
                                 # If the response was successful, no Exception will be raised
                                 response.raise_for_status()
 
-                                if response.status_code == 200:
-                                    self.logger.info('Success!')
-                                    self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
-                                    self.__db_seeder(temp_dir, url, headers, bin_file_path)
-                                elif response.status_code == 404:
-                                    self.logger.info('Not Found.')
-                                elif response.status_code == 400:
-                                    self.logger.info('Bad Request.')
-                                elif response.status_code == 401:
-                                    self.logger.info('Unauthorized.')
-                                elif response.status_code == 403:
-                                    self.logger.info('Forbidden.')
-                                elif response.status_code == 500:
-                                    self.logger.info('Internal Server Error.')
-                                else:
-                                    self.logger.info('Unexpected Status Code:', response.status_code)
-
                             except HTTPError as http_err:
                                 self.logger.info(f'HTTP error occurred: {http_err}')
                             except Exception as err:
