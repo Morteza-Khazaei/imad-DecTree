@@ -5,6 +5,7 @@ import argparse
 import zipfile
 import logging
 import requests
+import tempfile
 import jdatetime
 import numpy as np
 from osgeo import gdal, ogr
@@ -110,9 +111,11 @@ class DecTree:
     
 
     def __process_chmap(self, chmap:str, bin_file_path:str):
+        # Create a temporary directory to store intermediate files
+        temp_dir = tempfile.mkdtemp()
         
-        # trg_ds = gdal.Open(chmap, gdal.GA_ReadOnly)
-        trg_ds = gdal.Warp('', chmap, dstSRS='EPSG:3857', format='MEM', xRes=10, yRes=10)
+        trg_fname = os.path.join(temp_dir, 'CHMAP_3857_temp.tif')
+        trg_ds = gdal.Warp(trg_fname, chmap, dstSRS='EPSG:3857', format='GTiff', xRes=10, yRes=10)
 
         trg_geoTrans = trg_ds.GetGeoTransform()
         self.logger.debug(f'Orginal GeoTransform: {trg_geoTrans}')
@@ -210,7 +213,7 @@ class DecTree:
             self.logger.debug(f'Sum change image is successfully created.')
 
             # Write the output into geotiff image.
-            sum_fname = bin_file_path.replace('BIN', 'SUM')
+            sum_fname = os.path.join(temp_dir, 'sum_change_temp.tif')
             drv = gdal.GetDriverByName('GTiff')
             sum_ds = drv.Create(sum_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
             sum_band = sum_ds.GetRasterBand(1)
@@ -218,7 +221,7 @@ class DecTree:
 
             self.logger.debug(f'Sum Change with name {sum_fname} is created.')
 
-            prx_fname = bin_file_path.replace('BIN', 'PROX')
+            prx_fname = os.path.join(temp_dir, 'proxy_temp.tif')
             prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
             prx_band = prx_ds.GetRasterBand(1)
             self.logger.debug(f'Proxy with name {prx_fname} is created.')
@@ -256,6 +259,16 @@ class DecTree:
             bin_band.GetRasterBand(1).SetNoDataValue(255)
 
             bin_band.FlushCache()
+
+            # Remove temporary files and directory
+            trg_ds = None  # Close the wrap GDAL dataset
+            sum_ds = None  # Close the temporary GDAL dataset
+            prx_ds = None  # Close the proximity dataset
+            bin_ds = None  # Close the final binary dataset
+
+            # Clean up temporary files
+            os.remove(sum_fname)
+            os.remove(prx_fname)
         
         return None
 
