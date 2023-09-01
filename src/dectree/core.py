@@ -216,6 +216,8 @@ class DecTree:
             sum_fname = os.path.join(temp_dir, 'sum_change_temp.tif')
             drv = gdal.GetDriverByName('GTiff')
             sum_ds = drv.Create(sum_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
+            sum_ds.SetGeoTransform(new_trg_geoTrans)
+            sum_ds.SetProjection(trg_projection)
             sum_band = sum_ds.GetRasterBand(1)
             sum_band.WriteArray(sum_change)
 
@@ -223,11 +225,13 @@ class DecTree:
 
             prx_fname = os.path.join(temp_dir, 'proxy_temp.tif')
             prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
+            prx_ds.SetGeoTransform(new_trg_geoTrans)
+            prx_ds.SetProjection(trg_projection)
             prx_band = prx_ds.GetRasterBand(1)
             self.logger.debug(f'Proxy with name {prx_fname} is created.')
 
             gdal.ComputeProximity(sum_band, prx_band,
-                    options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=None) #gdal.TermProgress
+                    options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=gdal.TermProgress) #gdal.TermProgress
 
             prx_array = prx_band.ReadAsArray()
 
