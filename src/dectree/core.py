@@ -214,10 +214,12 @@ class DecTree:
             sum_band = sum_ds.GetRasterBand(1)
             sum_band.WriteArray(sum_change)
 
+            self.logger.debug(f'Sum Change with name {sum_fname} is created.')
+
             prx_fname = bin_file_path.replace('BIN', 'PROX')
             prx_ds = drv.Create(prx_fname, xsize, ysize, 1, gdal.GDT_Byte, options=['COMPRESS=LZW'])
             prx_band = prx_ds.GetRasterBand(1)
-            self.logger.debug(f'Sum Change and Proxy is created.')
+            self.logger.debug(f'Proxy with name {prx_fname} is created.')
 
             gdal.ComputeProximity(sum_band, prx_band,
                     options=["VALUES=2", "MAXDIST=5", "DISTUNITS=PIXEL", "NODATA=255", "FIXED_BUF_VAL=0"], callback=None) #gdal.TermProgress
