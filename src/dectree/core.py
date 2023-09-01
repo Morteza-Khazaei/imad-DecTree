@@ -188,8 +188,9 @@ class DecTree:
             ysize = int(lrY - ulY)
 
             # Get subset of the raster as a numpy array
+            self.logger.debug(f'Reading and cropping the landcover image based on tile number.')
             lc_sub_array = self.lc_band.ReadAsArray(int(ulX), int(ulY), xsize, ysize)
-
+            
             # Mask out other classes
             other_classes = np.isin(lc_sub_array, [2, 3, 4, 5, 6])
             
@@ -206,6 +207,7 @@ class DecTree:
             total_change_weak[nodata_mask] = 0
 
             sum_change = np.add(total_change_strong, total_change_weak, dtype=int)
+            self.logger.debug(f'Sum change image is successfully created.')
 
             # Write the output into geotiff image.
             sum_fname = bin_file_path.replace('BIN', 'SUM')
