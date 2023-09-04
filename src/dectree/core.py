@@ -40,14 +40,14 @@ class DecTree:
 
             self.seed_db = None
 
-            if self.headers:
+            if auth_token:
                 try:
                     response = requests.get(self.url, headers=self.headers)
                     # If the response was successful, no Exception will be raised
                     response.raise_for_status()
 
                     if response.status_code == 200:
-                        self.logger.info('Success!')
+                        self.logger.info(f'The database connection was successfully made to the server with IP: {self.url}.')
                         self.seed_db = True
                     elif response.status_code == 404:
                         self.logger.info('Not Found.')
@@ -68,6 +68,9 @@ class DecTree:
                     self.logger.info(f'Other error occurred: {err}')
                 else:
                     self.logger.info('Success!')
+            else:
+                self.logger.info(f'The database connection failed.')
+                sys.exit(1)
 
         return None
 
@@ -125,7 +128,7 @@ class DecTree:
         }
         resp = requests.post(token_url, data=json.dumps(auth_data), headers=headers).json()
 
-        return resp['token'] if 'token' in resp else resp['detail']
+        return resp['token'] if 'token' in resp else None
     
 
     def __process_chmap(self, temp_dir:str, chmap:str, bin_file_path:str):
@@ -395,6 +398,7 @@ class DecTree:
                     else:
                         self.logger.info(f'This file has already been created at: {bin_file_path}')
                         if self.seed_db:
+                            self.logger.info(f'The database connection was successfully made to the server with IP: {self.url}')
                             nrgb_name = file.replace('CHMAP', 'NRGB')
                             nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
                             
