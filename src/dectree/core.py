@@ -70,7 +70,6 @@ class DecTree:
                     self.logger.info('Success!')
             else:
                 self.logger.info(f'The database connection failed.')
-                sys.exit(1)
 
         return None
 
