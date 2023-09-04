@@ -33,10 +33,41 @@ class DecTree:
         self.false_mask = false_mask
         
         # datebase connection params
-        self.seed_db = seed_db
-        self.username = username
-        self.password = password
-        self.address = address
+        if seed_db and address and username and password:
+            self.url = f'{address}/gcms/api/TreeCoverLossRaster/'
+            auth_token = self.__get_token(self.url, username , password)
+            self.headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
+
+            self.seed_db = None
+
+            if self.headers:
+                try:
+                    response = requests.get(self.url, headers=self.headers)
+                    # If the response was successful, no Exception will be raised
+                    response.raise_for_status()
+
+                    if response.status_code == 200:
+                        self.logger.info('Success!')
+                        self.seed_db = True
+                    elif response.status_code == 404:
+                        self.logger.info('Not Found.')
+                    elif response.status_code == 400:
+                        self.logger.info('Bad Request.')
+                    elif response.status_code == 401:
+                        self.logger.info('Unauthorized.')
+                    elif response.status_code == 403:
+                        self.logger.info('Forbidden.')
+                    elif response.status_code == 500:
+                        self.logger.info('Internal Server Error.')
+                    else:
+                        self.logger.info('Unexpected Status Code:', response.status_code)
+
+                except HTTPError as http_err:
+                    self.logger.info(f'HTTP error occurred: {http_err}')
+                except Exception as err:
+                    self.logger.info(f'Other error occurred: {err}')
+                else:
+                    self.logger.info('Success!')
 
         return None
 
@@ -86,16 +117,15 @@ class DecTree:
         return bbox
 
 
-    def __get_token(self, username, password):
-        token_url = "http://192.168.66.66:9090/gcms/accounts/api/auth/login"
+    def __get_token(self, token_url, username, password):
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
         auth_data = {
-            "email": username,
-            "password": password
+            'email': username,
+            'password': password
         }
         resp = requests.post(token_url, data=json.dumps(auth_data), headers=headers).json()
 
-        return resp["token"]
+        return resp['token'] if 'token' in resp else resp['detail']
     
 
     def __process_chmap(self, temp_dir:str, chmap:str, bin_file_path:str):
@@ -289,7 +319,7 @@ class DecTree:
         return None
 
 
-    def __db_seeder(self, temp_dir, url, headers, image_path):
+    def __db_seeder(self, temp_dir, image_path):
 
         base_dir, fname = os.path.splitext(image_path)
 
@@ -318,7 +348,7 @@ class DecTree:
 
         files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
 
-        resp =  requests.post(url, data=data, headers=headers, files=files)
+        resp =  requests.post(self.url, data=data, headers=self.headers, files=files)
         self.logger.info(resp.status_code)
     
         return resp
@@ -343,99 +373,36 @@ class DecTree:
                 bname = file.replace('CHMAP', 'BIN')
                 bin_file_path = os.path.join(out_dir, bname)
 
-                if not os.path.exists(bin_file_path):
-                    # Create a temporary directory to store intermediate files
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        self.logger.info(f'Temporary directory was created: {temp_dir}')
-                        self.logger.info('Create file %s' % bin_file_path)
+                # Create a temporary directory to store intermediate files
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    self.logger.info(f'Temporary directory was created at: {temp_dir}')
 
-                        self.__process_chmap(temp_dir, chmap_file_path, bin_file_path)
+                    if not os.path.exists(bin_file_path):
+                            self.logger.info('Create file %s' % bin_file_path)
 
+                            self.__process_chmap(temp_dir, chmap_file_path, bin_file_path)
+
+                            if self.seed_db:
+                                nrgb_name = file.replace('CHMAP', 'NRGB')
+                                nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
+                                
+                                self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
+                                self.logger.info(f'DecTree will update database with this BIN map: {bname}')
+
+                                self.__db_seeder(temp_dir, nrgb_file_path)
+                                self.__db_seeder(temp_dir, bin_file_path)
+
+                    else:
+                        self.logger.info(f'This file has already been created at: {bin_file_path}')
                         if self.seed_db:
-                            url = f'{self.address}/gcms/api/TreeCoverLossRaster/'
-                            auth_token = self.__get_token(self.username , self.password)
-                            headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
-
                             nrgb_name = file.replace('CHMAP', 'NRGB')
                             nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
                             
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                            try:
-                                response = requests.get(url, headers=headers)
-                                # If the response was successful, no Exception will be raised
-                                response.raise_for_status()
-
-                                if response.status_code == 200:
-                                    self.logger.info('Success!')
-                                    self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
-                                    self.__db_seeder(temp_dir, url, headers, bin_file_path)
-                                elif response.status_code == 404:
-                                    self.logger.info('Not Found.')
-                                elif response.status_code == 400:
-                                    self.logger.info('Bad Request.')
-                                elif response.status_code == 401:
-                                    self.logger.info('Unauthorized.')
-                                elif response.status_code == 403:
-                                    self.logger.info('Forbidden.')
-                                elif response.status_code == 500:
-                                    self.logger.info('Internal Server Error.')
-                                else:
-                                    self.logger.info('Unexpected Status Code:', response.status_code)
-
-                            except HTTPError as http_err:
-                                self.logger.info(f'HTTP error occurred: {http_err}')
-                            except Exception as err:
-                                self.logger.info(f'Other error occurred: {err}')
-                            else:
-                                self.logger.info('Success!')
-                            
-                else:
-                    # Create a temporary directory to store intermediate files
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        self.logger.info(f'Temporary directory was created: {temp_dir}')
-                        self.logger.info(f'This file has already been created: {bin_file_path}')
-
-                        if self.seed_db:
-                            url = f'{self.address}/gcms/api/TreeCoverLossRaster/'
-                            auth_token = self.__get_token(self.username , self.password)
-                            headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
-
-                            nrgb_name = file.replace('CHMAP', 'NRGB')
-                            nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
-                            
-                            self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
-                            self.logger.info(f'DecTree will update database with this BIN map: {bname}')
-
-                            try:
-                                response = requests.get(url, headers=headers)
-                                # If the response was successful, no Exception will be raised
-                                response.raise_for_status()
-
-                                if response.status_code == 200:
-                                    self.logger.info('Success!')
-                                    self.__db_seeder(temp_dir, url, headers, nrgb_file_path)
-                                    self.__db_seeder(temp_dir, url, headers, bin_file_path)
-                                elif response.status_code == 404:
-                                    self.logger.info('Not Found.')
-                                elif response.status_code == 400:
-                                    self.logger.info('Bad Request.')
-                                elif response.status_code == 401:
-                                    self.logger.info('Unauthorized.')
-                                elif response.status_code == 403:
-                                    self.logger.info('Forbidden.')
-                                elif response.status_code == 500:
-                                    self.logger.info('Internal Server Error.')
-                                else:
-                                    self.logger.info('Unexpected Status Code:', response.status_code)
-
-                            except HTTPError as http_err:
-                                self.logger.info(f'HTTP error occurred: {http_err}')
-                            except Exception as err:
-                                self.logger.info(f'Other error occurred: {err}')
-                            else:
-                                self.logger.info('Success!')
+                            self.__db_seeder(temp_dir, nrgb_file_path)
+                            self.__db_seeder(temp_dir, bin_file_path)
 
 def main():
 
