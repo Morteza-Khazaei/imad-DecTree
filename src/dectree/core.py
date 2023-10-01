@@ -352,11 +352,12 @@ class DecTree:
             'month': jalili_date.month,
             'scene_name': tile
         }
+        self.logger.debug(data)
 
         files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
 
         resp =  requests.post(self.url, data=data, headers=self.headers, files=files)
-        self.logger.info(resp)
+        self.logger.info(resp.text)
     
         return resp
 
