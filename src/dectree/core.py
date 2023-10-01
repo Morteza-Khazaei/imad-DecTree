@@ -35,7 +35,8 @@ class DecTree:
         
         # datebase connection params
         if seed_db and address and username and password:
-            self.url = f'{address}/gcms/api/TreeCoverLossRaster/'
+            self.url_bin = f'{address}/gcms/api/TreeCoverLossRaster/'
+            self.url_nrgb = f'{address}/gcms/api/Sentinel2Raster/'
             auth_token = self.__get_token(address, username , password)
             self.headers = {'Accept': 'application/json', 'Authorization': 'JWT {}'.format(auth_token)}
 
@@ -43,7 +44,7 @@ class DecTree:
 
             if auth_token:
                 try:
-                    response = requests.get(self.url, headers=self.headers)
+                    response = requests.get(self.url_bin, headers=self.headers)
                     # If the response was successful, no Exception will be raised
                     response.raise_for_status()
 
@@ -356,8 +357,12 @@ class DecTree:
 
         files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
 
-        resp =  requests.post(self.url, data=data, headers=self.headers, files=files)
-        self.logger.info(resp.text)
+        if ftype == 'NRGB':
+            resp =  requests.post(self.url_nrgb, data=data, headers=self.headers, files=files)
+            self.logger.info(resp.text)
+        else:
+            resp =  requests.post(self.url_bin, data=data, headers=self.headers, files=files)
+            self.logger.info(resp.text)
     
         return resp
 
