@@ -1,22 +1,22 @@
-import json
-import requests
+# import json
+# import requests
 
 
-def get_token(token_url, username, password):
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        auth_data = {
-            'email': username,
-            'password': password
-        }
-        resp = requests.post(token_url, data=json.dumps(auth_data), headers=headers).json()
+# def get_token(token_url, username, password):
+#         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+#         auth_data = {
+#             'email': username,
+#             'password': password
+#         }
+#         resp = requests.post(token_url, data=json.dumps(auth_data), headers=headers).json()
 
-        return resp
+#         return resp
 
 
 
-url = "http://185.255.89.2/gcms/api/TreeCoverLossRaster/"
-auth_token = get_token(url, 'mortezakhazaei1370@gmail.com', 'm3541532')
-print(auth_token)
+# url = "http://185.255.89.2/gcms/api/TreeCoverLossRaster/"
+# auth_token = get_token(url, 'mortezakhazaei1370@gmail.com', 'm3541532')
+# print(auth_token)
 # headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
 # # code
 # try:
@@ -27,3 +27,11 @@ print(auth_token)
 # 	print("Missing schema: include http or https")
 # except requests.exceptions.ReadTimeout as errrt:
 # 	print("Time out")
+
+
+
+import os
+
+
+base_path = r'/opt/airflow/sats/S2/CHBIN/39STD/SENTINEL2X_20230204-194851-224_L3A_T39STD_C_V1-0_FRC_NRGB.tif'
+print(os.path.split(base_path))

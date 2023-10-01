@@ -324,7 +324,7 @@ class DecTree:
 
     def __db_seeder(self, temp_dir, image_path):
 
-        base_dir, fname = os.path.splitext(image_path)
+        base_dir, fname = os.path.split(image_path)
         self.logger.debug(f'File path: {image_path}')
         self.logger.debug(f'Split file path into base and file name: {base_dir}, {fname}')
 
