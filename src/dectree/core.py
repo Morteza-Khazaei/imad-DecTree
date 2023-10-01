@@ -329,7 +329,7 @@ class DecTree:
         self.logger.debug(f'File path: {image_path}')
         self.logger.debug(f'Split file path into base and file name: {base_dir}, {fname}')
 
-        platform, date_obj, product, tile, c, version, ftype = fname.split('_')
+        platform, date_obj, product, tile, c, version, frc, ftype = fname.split('_')
         date_time_str = date_obj.split('-')[0]
 
         jalali_date =  jdatetime.datetime.strptime(date_time_str, '%Y%m%d')
