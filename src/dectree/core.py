@@ -36,7 +36,7 @@ class DecTree:
         if seed_db and address and username and password:
             self.url = f'{address}/gcms/api/TreeCoverLossRaster/'
             auth_token = self.__get_token(address, username , password)
-            self.headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
+            self.headers = {'Accept': 'application/json', 'Authorization': 'JWT {}'.format(auth_token)}
 
             self.seed_db = None
 
@@ -120,7 +120,7 @@ class DecTree:
 
 
     def __get_token(self, address, username, password):
-        token_url = f'{address}/gcms/accounts/api/auth/login'
+        token_url = f'{address}/gcms/auth/jwt/create'
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
         auth_data = {
             'email': username,
@@ -128,7 +128,7 @@ class DecTree:
         }
         resp = requests.post(token_url, data=json.dumps(auth_data), headers=headers).json()
 
-        return resp['token'] if 'token' in resp else None
+        return resp['access'] if 'access' in resp else None
     
 
     def __process_chmap(self, temp_dir:str, chmap:str, bin_file_path:str):
