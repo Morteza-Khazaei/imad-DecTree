@@ -9,6 +9,7 @@ import tempfile
 import jdatetime
 import numpy as np
 from osgeo import gdal, ogr
+from datetime import datetime
 from requests.exceptions import HTTPError
 
 
@@ -332,9 +333,9 @@ class DecTree:
         platform, date_obj, product, tile, c, version, frc, ftype = fname.split('_')
         date_time_str = date_obj.split('-')[0]
 
-        jalali_date =  jdatetime.datetime.strptime(date_time_str, '%Y%m%d')
+        jalili_date =  jdatetime.date.fromgregorian(date=datetime.strptime(date_time_str, '%Y%m%d'))
 
-        yyyymm = jalali_date.strftime("%Y%m")
+        yyyymm = jalili_date.strftime("%Y%m")
 
         pname = ''.join(['_'.join([ftype, yyyymm, tile]), '.tif']) #CHMAP_139802_39SUB.tif
 
@@ -347,8 +348,8 @@ class DecTree:
         self.logger.debug(f'Zipfile created with Id: {zfname}.')
 
         data = {
-            'year': jalali_date.year,
-            'month': jalali_date.month,
+            'year': jalili_date.year,
+            'month': jalili_date.month,
             'scene_name': tile
         }
 
