@@ -35,7 +35,7 @@ class DecTree:
         # datebase connection params
         if seed_db and address and username and password:
             self.url = f'{address}/gcms/api/TreeCoverLossRaster/'
-            auth_token = self.__get_token(self.url, username , password)
+            auth_token = self.__get_token(address, username , password)
             self.headers = {'Accept': 'application/json', 'Authorization': 'Token {}'.format(auth_token)}
 
             self.seed_db = None
@@ -119,7 +119,8 @@ class DecTree:
         return bbox
 
 
-    def __get_token(self, token_url, username, password):
+    def __get_token(self, address, username, password):
+        token_url = f'{address}/gcms/accounts/api/auth/login'
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
         auth_data = {
             'email': username,
