@@ -356,7 +356,7 @@ class DecTree:
         files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
 
         resp =  requests.post(self.url, data=data, headers=self.headers, files=files)
-        self.logger.info(resp.status_code)
+        self.logger.info(resp)
     
         return resp
 
