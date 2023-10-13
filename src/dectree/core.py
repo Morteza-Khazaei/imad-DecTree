@@ -324,7 +324,7 @@ class DecTree:
         return None
 
 
-    def __db_seeder(self, temp_dir, image_path):
+    def __db_seeder(self, temp_dir, image_path, ptype):
 
         base_dir, ext = os.path.splitext(image_path)
         base_dir, fname = os.path.split(base_dir)
@@ -338,9 +338,9 @@ class DecTree:
 
         yyyymm = jalili_date.strftime("%Y%m")
 
-        pname = ''.join(['_'.join(['CHMAP', yyyymm, tile]), '.tif']) #CHMAP_139802_39SUB.tif
+        pname = ''.join(['_'.join([ptype, yyyymm, tile]), '.tif']) #CHMAP_139802_39SUB.tif
 
-        zfname = ''.join(['_'.join(['CHMAP', yyyymm, tile]), '.zip']) #CHMAP_139802_39SUB.zip
+        zfname = ''.join(['_'.join([ptype, yyyymm, tile]), '.zip']) #CHMAP_139802_39SUB.zip
 
         zf = zipfile.ZipFile(os.path.join(temp_dir, zfname), "w", zipfile.ZIP_DEFLATED)
 
@@ -355,12 +355,12 @@ class DecTree:
         }
         self.logger.debug(data)
 
+        files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
+
         if ftype == 'NRGB':
-            files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
             resp =  requests.post(self.url_nrgb, data=data, headers=self.headers, files=files)
             self.logger.info(resp.text)
         else:
-            files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
             resp =  requests.post(self.url_bin, data=data, headers=self.headers, files=files)
             self.logger.info(resp.text)
     
@@ -402,8 +402,8 @@ class DecTree:
                                 self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                                 self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                                # self.__db_seeder(temp_dir, nrgb_file_path)
-                                self.__db_seeder(temp_dir, bin_file_path)
+                                self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
+                                self.__db_seeder(temp_dir, bin_file_path, 'CHMAP')
 
                     else:
                         self.logger.info(f'This file has already been created at: {bin_file_path}')
@@ -415,8 +415,8 @@ class DecTree:
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                            # self.__db_seeder(temp_dir, nrgb_file_path)
-                            self.__db_seeder(temp_dir, bin_file_path)
+                            self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
+                            self.__db_seeder(temp_dir, bin_file_path, 'CHMAP')
 
 def main():
 
