@@ -49,7 +49,7 @@ class DecTree:
                     response.raise_for_status()
 
                     if response.status_code == 200:
-                        self.logger.info(f'The database connection was successfully made to the server with IP: {self.url}.')
+                        self.logger.info(f'The database connection was successfully made to the server with IP: {address}.')
                         self.seed_db = True
                     elif response.status_code == 404:
                         self.logger.info('Not Found.')
