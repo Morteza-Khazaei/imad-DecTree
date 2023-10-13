@@ -338,9 +338,9 @@ class DecTree:
 
         yyyymm = jalili_date.strftime("%Y%m")
 
-        pname = ''.join(['_'.join([ftype, yyyymm, tile]), '.tif']) #CHMAP_139802_39SUB.tif
+        pname = ''.join(['_'.join(['CHMAP', yyyymm, tile]), '.tif']) #CHMAP_139802_39SUB.tif
 
-        zfname = ''.join(['_'.join([ftype, yyyymm, tile]), '.zip']) #CHMAP_139802_39SUB.zip
+        zfname = ''.join(['_'.join(['CHMAP', yyyymm, tile]), '.zip']) #CHMAP_139802_39SUB.zip
 
         zf = zipfile.ZipFile(os.path.join(temp_dir, zfname), "w", zipfile.ZIP_DEFLATED)
 
