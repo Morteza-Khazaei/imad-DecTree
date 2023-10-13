@@ -391,7 +391,7 @@ class DecTree:
                     self.logger.info(f'Temporary directory was created at: {temp_dir}')
 
                     nrgb_name = file.replace('CHMAP', 'NRGB')
-                    product_dir = nrgb_name.split('-')[:6]
+                    product_dir = nrgb_name.split('_')[:6]
                     nrgb_file_path = os.path.join(out_dir.replace('CHBIN', 'L3A'), product_dir, nrgb_name)
 
                     if not os.path.exists(bin_file_path):
