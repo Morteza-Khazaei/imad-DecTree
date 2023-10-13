@@ -396,26 +396,26 @@ class DecTree:
                             self.__process_chmap(temp_dir, chmap_file_path, bin_file_path)
 
                             if self.seed_db:
-                                nrgb_name = file.replace('CHBIN', 'NRGB')
+                                nrgb_name = file.replace('CHMAP', 'NRGB')
                                 nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
                                 
                                 self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                                 self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                                self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
+                                # self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
                                 self.__db_seeder(temp_dir, bin_file_path, 'CHMAP')
 
                     else:
                         self.logger.info(f'This file has already been created at: {bin_file_path}')
                         if self.seed_db:
                             self.logger.info(f'The database connection was successfully made to the server with IP: {self.url_bin}')
-                            nrgb_name = file.replace('CHBIN', 'NRGB')
+                            nrgb_name = file.replace('CHMAP', 'NRGB')
                             nrgb_file_path = os.path.join(out_dir.replace('CHMAP', 'L3A'), nrgb_name)
                             
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                            self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
+                            # self.__db_seeder(temp_dir, nrgb_file_path, 'SENTINEL2')
                             self.__db_seeder(temp_dir, bin_file_path, 'CHMAP')
 
 def main():
