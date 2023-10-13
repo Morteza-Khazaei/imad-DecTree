@@ -344,7 +344,7 @@ class DecTree:
 
         zf = zipfile.ZipFile(os.path.join(temp_dir, zfname), "w", zipfile.ZIP_DEFLATED)
 
-        zf.write(temp_dir, pname)
+        zf.write(image_path, pname)
         zf.close()
         self.logger.debug(f'Zipfile created with Id: {zfname}.')
 
