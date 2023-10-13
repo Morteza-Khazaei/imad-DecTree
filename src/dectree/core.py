@@ -402,7 +402,7 @@ class DecTree:
                                 self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                                 self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                                # self.__db_seeder(temp_dir, nrgb_file_path)
+                                self.__db_seeder(temp_dir, nrgb_file_path)
                                 self.__db_seeder(temp_dir, bin_file_path)
 
                     else:
@@ -415,7 +415,7 @@ class DecTree:
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                            # self.__db_seeder(temp_dir, nrgb_file_path)
+                            self.__db_seeder(temp_dir, nrgb_file_path)
                             self.__db_seeder(temp_dir, bin_file_path)
 
 def main():
