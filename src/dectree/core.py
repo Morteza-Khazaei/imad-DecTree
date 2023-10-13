@@ -355,12 +355,12 @@ class DecTree:
         }
         self.logger.debug(data)
 
-        files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
-
         if ftype == 'NRGB':
+            files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
             resp =  requests.post(self.url_nrgb, data=data, headers=self.headers, files=files)
             self.logger.info(resp.text)
         else:
+            files = {'zip_file': open(os.path.join(temp_dir, zfname), 'rb')}
             resp =  requests.post(self.url_bin, data=data, headers=self.headers, files=files)
             self.logger.info(resp.text)
     
@@ -402,7 +402,7 @@ class DecTree:
                                 self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                                 self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                                self.__db_seeder(temp_dir, nrgb_file_path)
+                                # self.__db_seeder(temp_dir, nrgb_file_path)
                                 self.__db_seeder(temp_dir, bin_file_path)
 
                     else:
@@ -415,7 +415,7 @@ class DecTree:
                             self.logger.info(f'DecTree will update database with this NRGB image: {nrgb_name}')
                             self.logger.info(f'DecTree will update database with this BIN map: {bname}')
 
-                            self.__db_seeder(temp_dir, nrgb_file_path)
+                            # self.__db_seeder(temp_dir, nrgb_file_path)
                             self.__db_seeder(temp_dir, bin_file_path)
 
 def main():
