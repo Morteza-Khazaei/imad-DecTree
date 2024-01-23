@@ -28,6 +28,7 @@ class DecTree:
         self.logger = kwargs.get("logger", logging.getLogger("root"))
         self.logger.info(f'======================= This is DecTree v{self.version} ======================')
 
+        address = f'http://{address}' if "http" not in address else address
         self.input_base_dir = input
         self.output_base_dir = output
         self.landcover = landcover
